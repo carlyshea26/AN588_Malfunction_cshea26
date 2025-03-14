@@ -30,10 +30,10 @@ Z.prop.test <- function(p1, n1, p2 = NULL, n2 = NULL, p0, alternative = "two.sid
   if (is.null(p2) || is.null(n2)) {
     z <- (p1 - p0)/sqrt(p0 * (1 - p0)/n1) #mean of sample observations minus expected mean, divided by sample standard of deviations divided by square root of number of sample observations
     if (alternative == "greater") {
-      pval <- pnorm(z, lower.tail = FALSE)
+      pval <- pnorm(z, lower.tail = FALSE) #checking if alternative is greater or less than (indicates if we need to use upper or lower tail)
     } else if (alternative == "less") {
       pval <- pnorm(z, lower.tail = TRUE)
-    } else if (alternative == "two.sided") {
+    } else if (alternative == "two.sided") { #otherwise checking if z is greater than zero, if so we do a lower tail test, if not we do an upper tail test
       if (z > 0) {
         pval <- 2 * pnorm(z, lower.tail = FALSE)
       } else {
@@ -41,13 +41,14 @@ Z.prop.test <- function(p1, n1, p2 = NULL, n2 = NULL, p0, alternative = "two.sid
       }
     }
     
+    #creating warning message to ensure the validity of assuming the normal distribution
     if ((n1 * p0 > 5) || (n1 * (1-p0) > 5)) {
-      warning("invalid assumption of normal distribution")
+      warning("invalid assumption of normal distribution") 
     }
     
     lower <- p1 - qnorm(0.975) * sqrt(p1 * (1 - p1)/n1)
     upper <- p1 + qnorm(0.975) * sqrt(p1 * (1 - p1)/n1)
-    ci <- c(lower, upper)
+    ci <- c(lower, upper) #creating confidence interval based on upper and lower bounds (.975 and .025)
     
     result <- list(test.type = "One-Sample Proportion Z-test", 
                                 alternative = alternative,
@@ -71,23 +72,23 @@ Z.prop.test <- function(p1, n1, p2 = NULL, n2 = NULL, p0, alternative = "two.sid
           }
     
     if ((n1 * p0 < 5) | (n1 * (1 - p0) < 5 ) | (n2 * p0 < 5) | (n2 * (1 - p0) < 5)) {
-      warning("Check data, assumption of normal distribution violated!")
+      warning("invalid assumption of normal distribution")
   }
-  alpha = 1 - (conf.level)
-  crit <- qnorm(1 - alpha/2)
+  a = 1 - (conf.level)
+  crit <- qnorm(1 - a/2)
   
   upper <- (p1 - p2) + (crit) * (sqrt((p1*(1-p1)/n1) + (p2 * (1-p2)/n2)))
   lower <- (p1 - p2) - (crit) * (sqrt((p1*(1-p1)/n1) + (p2 * (1-p2)/n2)))
   ci <- c(lower, upper)
   
-    two.sample.proptest <- list(test.type = "Two-Sample Proportion Z-test", 
+    result2 <- list(test.type = "Two-Sample Proportion Z-test", 
                                 alternative = alternative,
                                 z.test.statistic = as.numeric(z), 
                                 p.value = as.numeric(pval), 
                                 confidence.interval = ci, 
                                 critical.value = as.numeric(crit))
-    return(two.sample.proptest)
+    return(result2)
   }
 }
 ```
-
+## 2) The dataset from Kamilar and Cooper has in it a large number of variables related to life history and body size. For this exercise, the end aim is to fit a simple linear regression model to predict longevity (MaxLongevity_m) measured in months from species’ brain size (Brain_Size_Species_Mean) measured in grams. Do the following for both longevity~brain size and log(longevity)~log(brain size):

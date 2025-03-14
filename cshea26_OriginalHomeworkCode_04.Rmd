@@ -105,31 +105,28 @@ Z.prop.test <- function(p1, n1, p2 = NULL, n2 = NULL, p0, alternative = "two.sid
 ```{r}
 library(curl)
 library(ggplot2)
-library(ggpubr) #this allows me to display a fancy equation on my linear regressin plot
+library(ggpubr) 
+
 f <- curl("https://raw.githubusercontent.com/fuzzyatelin/fuzzyatelin.github.io/master/AN588_Fall21/KamilarAndCooperData.csv")
 monkey <- read.csv(f, header = TRUE, sep = ",", stringsAsFactors = FALSE)
-head(monkey)
-```
-I am going to use this format from module 12 to accomplish creating a linear regression: 
 
-y <- h - mean(h)
-x <- w - mean(w)
-z <- data.frame(cbind(x, y))
-g <- ggplot(data = z, aes(x = x, y = y)) + geom_point()
-g
-```{r}
-#we can now isolate the columns that we want to look at exclusively
-#need to clean my data first to remove unecessary info, or else i get a warning sign when i try to plot
 
-monkey_clean <- na.omit(monkey[, c("MaxLongevity_m", "Brain_Size_Species_Mean")])
-longevity <- monkey_clean$MaxLongevity_m #extracting clean variables
-brain <- monkey_clean$Brain_Size_Species_Mean
+monkey_clean <- na.omit(monkey[, c("MaxLongevity_m", "Brain_Size_Species_Mean")]) # clean data to get longevity and brain size
 
-y <- brain_size - mean(brain) #here could also just use monkey$MaxLongevity_m instead of brain_size
-x <- longevity - mean(longevity)
-z <- data.frame(cbind(x, y)) #this creates a data frame that i can then use
-g <- ggplot(data = monkey, aes(x = longevity, y = brain)) + geom_point()
-g <- g + geom_smooth(method = "lm", formula = y ~ x)
-g
+longevity <- monkey_clean$MaxLongevity_m
+brain <- monkey_clean$Brain_Size_Species_Mean #save brain size and longevity into variables
+
+y <- brain - mean(brain)
+x <- longevity - mean(longevity) # find the mean of each variable
+
+z <- data.frame(x = x, y = y) # create a dataframe to display longevity and brain size means
+
+g <- ggplot(data = z, aes(x = x, y = y)) + 
+  geom_point() +
+  geom_smooth(method = "lm", formula = y ~ x) +
+  stat_regline_equation(aes(label = ..eq.label..)) # create a graph to display
+
+g # shows the graph
+
 ```
 

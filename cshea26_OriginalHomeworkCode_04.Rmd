@@ -4,6 +4,7 @@ author: "Carly S McDermott"
 date: "2025-03-14"
 output: 
   html_document:
+    theme: flatly
     toc: true
     toc_float: true
 ---
@@ -98,13 +99,37 @@ Z.prop.test <- function(p1, n1, p2 = NULL, n2 = NULL, p0, alternative = "two.sid
 #need to create test now to validate results
 ```
 
-## 2) The dataset from Kamilar and Cooper has in it a large number of variables related to life history and body size. For this exercise, the end aim is to fit a simple linear regression model to predict longevity (MaxLongevity_m) measured in months from species’ brain size (Brain_Size_Species_Mean) measured in grams. Do the following for both longevity~brain size and log(longevity)~log(brain size):
+## 2) The dataset from Kamilar and Cooper has in it a large number of variables related to life history and body size. 
+- For this exercise, the end aim is to fit a simple linear regression model to predict longevity (MaxLongevity_m) measured in months from species’ brain size (Brain_Size_Species_Mean) measured in grams. Do the following for both longevity~brain size and log(longevity)~log(brain size):
 
 ```{r}
 library(curl)
+library(ggplot2)
+library(ggpubr) #this allows me to display a fancy equation on my linear regressin plot
 f <- curl("https://raw.githubusercontent.com/fuzzyatelin/fuzzyatelin.github.io/master/AN588_Fall21/KamilarAndCooperData.csv")
-monkeys <- read.csv(f, header = TRUE, sep = ",", stringsAsFactors = FALSE)
-monkeys <- na.omit(monkeys)
-head(monkeys)
+monkey <- read.csv(f, header = TRUE, sep = ",", stringsAsFactors = FALSE)
+head(monkey)
+```
+I am going to use this format from module 12 to accomplish creating a linear regression: 
+
+y <- h - mean(h)
+x <- w - mean(w)
+z <- data.frame(cbind(x, y))
+g <- ggplot(data = z, aes(x = x, y = y)) + geom_point()
+g
+```{r}
+#we can now isolate the columns that we want to look at exclusively
+#need to clean my data first to remove unecessary info, or else i get a warning sign when i try to plot
+
+monkey_clean <- na.omit(monkey[, c("MaxLongevity_m", "Brain_Size_Species_Mean")])
+longevity <- monkey_clean$MaxLongevity_m #extracting clean variables
+brain <- monkey_clean$Brain_Size_Species_Mean
+
+y <- brain_size - mean(brain) #here could also just use monkey$MaxLongevity_m instead of brain_size
+x <- longevity - mean(longevity)
+z <- data.frame(cbind(x, y)) #this creates a data frame that i can then use
+g <- ggplot(data = monkey, aes(x = longevity, y = brain)) + geom_point()
+g <- g + geom_smooth(method = "lm", formula = y ~ x)
+g
 ```
 

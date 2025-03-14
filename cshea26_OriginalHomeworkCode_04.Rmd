@@ -2,7 +2,10 @@
 title: "cshea26_OriginalHomeworkCode_04"
 author: "Carly S McDermott"
 date: "2025-03-14"
-output: html_document
+output: 
+  html_document:
+    toc: true
+    toc_float: true
 ---
 
 ```{r setup, include=FALSE}
@@ -90,5 +93,18 @@ Z.prop.test <- function(p1, n1, p2 = NULL, n2 = NULL, p0, alternative = "two.sid
     return(result2)
   }
 }
+
+
+#need to create test now to validate results
 ```
+
 ## 2) The dataset from Kamilar and Cooper has in it a large number of variables related to life history and body size. For this exercise, the end aim is to fit a simple linear regression model to predict longevity (MaxLongevity_m) measured in months from species’ brain size (Brain_Size_Species_Mean) measured in grams. Do the following for both longevity~brain size and log(longevity)~log(brain size):
+
+```{r}
+library(curl)
+f <- curl("https://raw.githubusercontent.com/fuzzyatelin/fuzzyatelin.github.io/master/AN588_Fall21/KamilarAndCooperData.csv")
+monkeys <- read.csv(f, header = TRUE, sep = ",", stringsAsFactors = FALSE)
+monkeys <- na.omit(monkeys)
+head(monkeys)
+```
+

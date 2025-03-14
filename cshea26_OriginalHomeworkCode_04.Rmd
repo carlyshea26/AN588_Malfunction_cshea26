@@ -9,3 +9,85 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+INFO: 
+- Z and T tests are used to evaluate whether a given sample statistic (e.g., a mean or proportion) deviates significantly from what is expected under a null model or whether two samples statistics deviate significantly from one another.
+
+- We REJECT a H0 if the p value obtained for a given Z or T test statistic is < α
+CIs for our sample statistic are calculated as mean ± T(1−α/2) or Z(1−α/2) x SEM, and we can REJECT a H0 if the (1-α) CI around does not include the expected value of the statistic
+When the sample size > 30, or when we are dealing with proportions, we use Z quantiles for calculating CIs and p values, but for sample size < 30, we use T quantiles
+
+
+
+## 1) Write a simple R function, Z.prop.test(), that can perform one- or two-sample Z-tests for proportion data, using the following guidelines:
+- Your function should take the following arguments: p1 and n1 (no default) representing the estimated proportion and sample size (i.e., based on your sample data); p2 and n2 (both defaulting to NULL) that contain a second sample’s proportion and sample size data in the event of a two-sample test; p0 (no default) as the expected value for the population proportion; and alternative (default “two.sided”) and conf.level (default 0.95), to be used in the same way as in the function t.test().
+- When conducting a two-sample test, it should be p1 that is tested as being smaller or larger than p2 when alternative=“less” or alternative=“greater”, the same as in the use of x and y in the function t.test().
+The function should perform a one-sample Z-test using p1, n1, and p0 if either p2 or n2 (or both) is NULL.
+- The function should contain a check for the rules of thumb we have talked about (\(n * p > 5\) and \(n * (1-p) > 5\)) to ensure the validity of assuming the normal distribution in both the one- and two-sample settings. If this is violated, the function should still complete but it should also print an appropriate warning message.
+- The function should return a list containing the members Z (the test statistic), P (the appropriate p value), and CI (the two-sided CI with respect to “conf.level” around p1 in the case of a one-sample test and around p2-p1 in the case of a two-sample test). - For all test alternatives (“two.sided”, “greater”, “less”), calculate symmetric CIs based on quantiles of the normal distribution rather than worrying about calculating single-limit confidence bounds.
+
+```{r}
+Z.prop.test <- function(p1, n1, p2 = NULL, n2 = NULL, p0, alternative = "two.sided", conf.level = 0.95) {
+  if (is.null(p2) || is.null(n2)) {
+    z <- (p1 - p0)/sqrt(p0 * (1 - p0)/n1) #mean of sample observations minus expected mean, divided by sample standard of deviations divided by square root of number of sample observations
+    if (alternative == "greater") {
+      pval <- pnorm(z, lower.tail = FALSE)
+    } else if (alternative == "less") {
+      pval <- pnorm(z, lower.tail = TRUE)
+    } else if (alternative == "two.sided") {
+      if (z > 0) {
+        pval <- 2 * pnorm(z, lower.tail = FALSE)
+      } else {
+        pval <- 2 * pnorm(z, lower.tail = TRUE)
+      }
+    }
+    
+    if ((n1 * p0 > 5) || (n1 * (1-p0) > 5)) {
+      warning("invalid assumption of normal distribution")
+    }
+    
+    lower <- p1 - qnorm(0.975) * sqrt(p1 * (1 - p1)/n1)
+    upper <- p1 + qnorm(0.975) * sqrt(p1 * (1 - p1)/n1)
+    ci <- c(lower, upper)
+    
+    result <- list(test.type = "One-Sample Proportion Z-test", 
+                                alternative = alternative,
+                                z.test.stat = as.numeric(z), 
+                                p.value = as.numeric(pval), 
+                                confidence.interval = ci)
+    return(result)
+  } else {
+    pstar <- ((p1*n1) + (p2*n2))/(n1 + n2) 
+    
+    z <- (p2 - p1)/sqrt((pstar * (1 - pstar)) * (1/n1 + 1/n2))
+    
+    if (alternative == "greater") {
+        pval <- pnorm(z, lower.tail = FALSE)
+      }
+      if (alternative == "less") {
+        pval <- pnorm(z, lower.tail = TRUE)
+      }
+      if (alternative == "two.sided") {
+        pval <- 1 - pnorm(z, lower.tail = TRUE) + pnorm(z, lower.tail = FALSE)
+          }
+    
+    if ((n1 * p0 < 5) | (n1 * (1 - p0) < 5 ) | (n2 * p0 < 5) | (n2 * (1 - p0) < 5)) {
+      warning("Check data, assumption of normal distribution violated!")
+  }
+  alpha = 1 - (conf.level)
+  crit <- qnorm(1 - alpha/2)
+  
+  upper <- (p1 - p2) + (crit) * (sqrt((p1*(1-p1)/n1) + (p2 * (1-p2)/n2)))
+  lower <- (p1 - p2) - (crit) * (sqrt((p1*(1-p1)/n1) + (p2 * (1-p2)/n2)))
+  ci <- c(lower, upper)
+  
+    two.sample.proptest <- list(test.type = "Two-Sample Proportion Z-test", 
+                                alternative = alternative,
+                                z.test.statistic = as.numeric(z), 
+                                p.value = as.numeric(pval), 
+                                confidence.interval = ci, 
+                                critical.value = as.numeric(crit))
+    return(two.sample.proptest)
+  }
+}
+```
+

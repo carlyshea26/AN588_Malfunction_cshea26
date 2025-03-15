@@ -95,96 +95,173 @@ Z.prop.test <- function(p1, n1, p2 = NULL, n2 = NULL, p0, alternative = "two.sid
   }
 }
 
-
 #need to create test now to validate results
 ```
 
-## 2) The dataset from Kamilar and Cooper has in it a large number of variables related to life history and body size. 
+## Question 2) The dataset from Kamilar and Cooper has in it a large number of variables related to life history and body size. 
 - For this exercise, the end aim is to fit a simple linear regression model to predict longevity (MaxLongevity_m) measured in months from species’ brain size (Brain_Size_Species_Mean) measured in grams. Do the following for both longevity~brain size and log(longevity)~log(brain size):
 
-Part 1: Fit the regression model and, using {ggplot2}, produce a scatterplot with the fitted line superimposed upon the data. Append the the fitted model equation to your plot (HINT: use the function geom_text())
+## Part 1: 
+Fit the regression model and, using {ggplot2}, produce a scatterplot with the fitted line superimposed upon the data. Append the the fitted model equation to your plot (HINT: use the function geom_text())
+reattempt:
 ```{r}
 library(curl)
 library(ggplot2)
 library(ggpubr) 
 
-f <- curl("https://raw.githubusercontent.com/fuzzyatelin/fuzzyatelin.github.io/master/AN588_Fall21/KamilarAndCooperData.csv")
-monkey <- read.csv(f, header = TRUE, sep = ",", stringsAsFactors = FALSE)
+data <- curl("https://raw.githubusercontent.com/fuzzyatelin/fuzzyatelin.github.io/master/AN588_Fall21/KamilarAndCooperData.csv") #load data
+data <- read.csv(data, header = TRUE, sep = ",", stringsAsFactors = FALSE)
+data <- na.omit(data) # clean data to get longevity and brain size (NA categories)
 
+#creating model1: longevity ~ brain size
+model1 <- lm(MaxLongevity_m ~ Brain_Size_Species_Mean, data = data) #coef returns standardized model regression coefficients
+intercept1 <- coef(model1)["(Intercept)"]
+slope1 <- coef(model1)["Brain_Size_Species_Mean"]
 
-monkey_clean <- na.omit(monkey[, c("MaxLongevity_m", "Brain_Size_Species_Mean")]) # clean data to get longevity and brain size
+# creating model 2: log(longevity) ~ log(brain size), doing the same as above but with the logs
+model2 <- lm(log(MaxLongevity_m) ~ log(Brain_Size_Species_Mean), data = data)
+intercept2 <- coef(model2)["(Intercept)"]
+slope2 <- coef(model2)["log(Brain_Size_Species_Mean)"]
 
-longevity <- monkey_clean$MaxLongevity_m
-brain <- monkey_clean$Brain_Size_Species_Mean #save brain size and longevity into variables
+#plotting model1 in ggplot as p1
+p1 <- ggplot(data, aes(x = Brain_Size_Species_Mean, y = MaxLongevity_m)) +
+  geom_point(alpha = 0.5) +
+  geom_abline(intercept = intercept1, slope = slope1, color = "blue") + geom_text(aes(x = max(Brain_Size_Species_Mean), y = max(MaxLongevity_m), 
+#this next part gives me my equation for the line                                                              
+                label = paste("y = ", round(coef(model1)[1], 2), " + ", round(coef(model1)[2], 2), " * x")), 
+            hjust = 1, vjust = 1, size = 5) +
+  labs(title = "Longevity vs Brain Size", x = "Brain Size (grams)", y = "Max Longevity (months)") +  theme_minimal()
+p1 
 
-z <- data.frame(x = longevity, y = brain) # create a dataframe to display longevity and brain size means
-
-model <- lm(y ~ x, data = z) # save lm func result in model
-
-intercept <- round(coef(model)[1], 2) # save x and y vals 
-slope <- round(coef(model)[2], 2)
-equation <- paste("y =", slope, "* x +", intercept) # format equation for geom_text header
-
-g <- ggplot(data = z, aes(x = x, y = y)) + 
-  geom_point() +
-  geom_smooth(method = "lm", formula = y ~ x) +
-  geom_text(x = min(z$x), y = max(z$y), label = equation, hjust = 0, size = 5) +
-  labs(title = "Brain Size vs. Longevity", x = "Longevity", y = "Brain Size") +
-  theme_minimal() # create a graph to display
-
-g # shows the graph
-
+#p2 represents linear regression plot for logs
+p2 <- ggplot(data, aes(x = log(Brain_Size_Species_Mean), y = log(MaxLongevity_m))) +
+  geom_point(alpha = 0.5) +
+  geom_abline(intercept = intercept2, slope = slope2, color = "red") +
+  geom_text(aes(x = max(log(Brain_Size_Species_Mean)), y = max(log(MaxLongevity_m)), 
+                label = paste("y = ", round(coef(model2)[1], 2), " + ", round(coef(model2)[2], 2), " * x")), 
+            hjust = 1, vjust = 1) +
+  labs(title = "Log of Brain Size vs. Log of Longevity", x = "Log of Longevity", y = "Log of Brain Size") +
+  theme_minimal()
+p2
 ```
-STILL NEED TO DO - PLOTTING LOGS: 
-```{r}
+- tried to use geom_smooth() but didn't like how the line it created wasn't making contact with the x axis. is there a way to fix this while still using geom smooth? instead here i just plotted a line equal to the intercept and slope i established above with my two models
 
-```
+## Part 2: 
 
+Identify and interpret the point estimate of the slope (β1), as well as the outcome of the test associated with the hypotheses H0: β1 = 0; HA: β1 ≠ 0. Also, find a 90 percent CI for the slope (β1) parameter.
 
-
-Part 2: Identify and interpret the point estimate of the slope (β1), as well as the outcome of the test associated with the hypotheses H0: β1 = 0; HA: β1 ≠ 0. Also, find a 90 percent CI for the slope (β1) parameter.
-
-An equation to use to calculate beta 1: 
+An equation I used to calculate beta 1: 
 - beta1 <- cor(w, h) * (sd(h)/sd(w))
 where 
 - w <- d$weight (longevity)
 - h <- d$height (brain size)
 ```{r}
-#assigning variables similar to module 12
-ci <- predict(model, newdata = data.frame(brain), interval = "confidence", level = 0.90) ##calculate the confidence interval
+w <- longevity
+h <- brain
+beta1 <- cor(w, h) * (sd(h)/sd(w))
+beta1
 
-info <- data.frame(cbind(brain, longevity, ci)) ##binding new data frame with confidence interval 
-
-names(info) <- c("x", "y", "CIfit", "CIlwr", "CIupr") #naming the columns
-
-pi <- predict(model, newdata = data.frame(brain), interval = "prediction", level = 0.90)  ##predict prediction interval 
-
-info_ci_pi <- cbind(info, pi) ##binding updated data frame
-
-names(info_ci_pi) <- c("x", "y", "CIfit", "CIlwr", "CIupr", "PIfit", "PIlwr", "PIupr") ##updated names of columns
-
-plot1b <- ggplot(data = info_ci_pi, aes(brain, longevity, label = rownames(info_ci_pi)))  ##drawing original plot with labels
-plot1b <- plot1b + geom_point(alpha = 1/2) + geom_line(aes(x = x, y = CIfit, colour = "fit")) + geom_line(aes(x = x, y = CIlwr, colour = "CI")) + geom_line(aes(x = x, y = CIupr, colour = "CI")) + geom_line(aes(x = x, y = PIlwr, colour = "PI")) + geom_line(aes(x = x, y = PIupr, colour = "PI")) + scale_color_manual(values = c("fit" = "black","CI" = "#F96900","PI" = "#00A5E0")) + theme(legend.position = "bottom", legend.title = element_blank()) ##drawing points and lines
-
-plot1b ##print graph 
-
+#to determine beta1 for the log plots
+w <- longevity_log
+h <- brain_size_log
+beta1 <- cor(w, h) * (sd(h)/sd(w))
+beta1
 ```
-because by beta1 value does not equal zero, we 
+- I'm not entirely sure what a nonzero value of  𝛽1 signifies? Rejecting some sort of null hypothesis? Would love some input
+- My best guess: the estimated 𝛽1 in both cases yields a non-zero value, meaning that we can reject the null hypothesis H0 which argues that 𝛽1 = 0, and therefore accept the HA (alternative hypothesis) that 𝛽1 does not equal 0.
 
+## Part 3: 
+
+Using your model, add lines for the 90 percent confidence and prediction interval bands on the plot and add a legend to differentiate between the lines.
+
+idek of this is correct? why are my lines curving for confidence interval?
+```{r}
+m <- lm(longevity ~ Brain_Size_Species_Mean, data = monkey_clean)
+summary(m)
+ci1 <- confint(m, level = 0.90); ci1
+ci2 <- predict(m, newdata = data.frame(Brain_Size_Species_Mean = monkey_clean$Brain_Size_Species_Mean), interval = "confidence",
+    level = 0.90) #max suggested this and the lines variable to make the ci and slope lines
+head(ci2)
+lines <- data.frame(ci2)
+
+#trying to make a plot for confidence intervals
+model_graph<- ggplot(monkey_clean, aes(x = brain, y = longevity))   + 
+  geom_point() +    
+  geom_line(aes(x = monkey_clean$Brain_Size_Species_Mean, y = lines$fit), col = "blue") +
+  geom_line(aes(x = monkey_clean$Brain_Size_Species_Mean, y = lines$upr), col = "red") +
+  geom_line(aes(x = monkey_clean$Brain_Size_Species_Mean, y = lines$lwr), col = "red") +
+  labs(title = "Brain Size vs. Longevity")
+model_graph
 ```
 
+For model 1: 
+```{r}
+v <- seq(from = min(data$Brain_Size_Species_Mean), to = max(data$Brain_Size_Species_Mean), length.out = 100)
+m <- lm(MaxLongevity_m ~ Brain_Size_Species_Mean, data = data)
+ci <- predict(m, newdata = data.frame(Brain_Size_Species_Mean = v), interval = "confidence", level = 0.90)
+pi <- predict(m, newdata = data.frame(Brain_Size_Species_Mean = v), interval = "prediction", level = 0.90)
 
-Part 3: Using your model, add lines for the 90 percent confidence and prediction interval bands on the plot and add a legend to differentiate between the lines.
+#cannot figure out how to do it with ggplot so doing it with general plot function
+plot(data$Brain_Size_Species_Mean, data$MaxLongevity_m)
+lines(v, ci[, 1], col = "black")
+lines(v, pi[, 2], col = "red")
+lines(v, pi[, 3], col = "red")
+```
+For model 2: 
+```{r}
+data$log_Brain_Size <- log(data$Brain_Size_Species_Mean)
+data$log_Longevity <- log(data$MaxLongevity_m)
+m2 <- lm(log_Longevity ~ log_Brain_Size, data = data)
+v_log <- seq(from = min(data$log_Brain_Size), to = max(data$log_Brain_Size), length.out = 100)
 
+ci <- predict(m2, newdata = data.frame(log_Brain_Size = v_log), interval = "confidence", level = 0.90)
+pi <- predict(m2, newdata = data.frame(log_Brain_Size = v_log), interval = "prediction", level = 0.90)
+
+plot(data$log_Brain_Size, data$log_Longevity, 
+     xlab = "Log Brain Size", 
+     ylab = "Log Max Longevity", 
+     main = "Log Regression of Brain Size vs. Longevity")
+lines(v_log, ci[, 1], col = "black")  
+lines(v_log, pi[, 2], col = "red")    
+lines(v_log, pi[, 3], col = "red")  
+
+
+
+#is this how i could do this with ggplot? offered an alternative that looks more similar to how we did it in module 12
+ci_df <- as.data.frame(ci)
+pi_df <- as.data.frame(pi)
+
+# Rename columns to prevent duplication
+colnames(ci_df) <- c("fit", "ci_lwr", "ci_upr")
+colnames(pi_df) <- c("fit_pred", "pi_lwr", "pi_upr")
+
+# Combine into a single data frame
+pred_df <- data.frame(log_Brain_Size = v_log, ci_df, pi_df)
+
+# Plot using ggplot2
+ggplot(data, aes(x = log_Brain_Size, y = log_Longevity)) +
+  geom_point() +
+  geom_line(data = pred_df, aes(x = log_Brain_Size, y = fit), color = "black") +  
+  geom_line(data = pred_df, aes(x = log_Brain_Size, y = pi_lwr), color = "red") +   
+  geom_line(data = pred_df, aes(x = log_Brain_Size, y = pi_upr), color = "red") + 
+  labs(x = "Log Brain Size", y = "Log Max Longevity", 
+       title = "Log Regression of Brain Size vs. Longevity") +
+  theme_minimal()
+```
+I offered two different methods for the second model (the log one) for creating my confidence interval (one with plot and the other with ggplot). i'm open to any suggestions if anyone has any ideas on how to make these plots look better/more similar to the ones we see in the modules. 
 
 Part 4: Produce a point estimate and associated 90 percent PI for the longevity of a species whose brain weight is 800 gm. Do you trust the model to predict observations accurately for this value of the explanatory variable? Why or why not?
 ```{r}
-log.pt.est <- predict(logm, newdata = data.frame(Brain_Size_Species_Mean = 800), interval = "prediction", 
-    level = 0.90)  # for a single value
-log.pt.est
+#for longevity ~ brain size
+p1 <- predict(model, newdata = data.frame(brain = 800), interval = "prediction", level = 0.90)
+p1
+
+#for the log
+p2 <- predict(model2, newdata = data.frame(brain_log = 800), interval = "prediction", level = 0.90)
+p2
 ```
-
-
-
 Looking at your two models, which do you think is better? Why?
 
+1. I keep getting this warning message when I try to run my graphs and I have no idea how to get around it:
+"Warning: [38;5;242mAll aesthetics have length 1, but the data has 26 rows. [36mℹ[38;5;242m Please consider using `annotate()` or provide this layer with data containing a single row."
+2. 

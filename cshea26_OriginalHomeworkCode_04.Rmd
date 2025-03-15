@@ -107,11 +107,13 @@ reattempt:
 ```{r}
 library(curl)
 library(ggplot2)
-library(ggpubr) 
+library(ggpubr)
+library(gridExtra)
 
 data <- curl("https://raw.githubusercontent.com/fuzzyatelin/fuzzyatelin.github.io/master/AN588_Fall21/KamilarAndCooperData.csv") #load data
 data <- read.csv(data, header = TRUE, sep = ",", stringsAsFactors = FALSE)
 data <- na.omit(data) # clean data to get longevity and brain size (NA categories)
+Brain_Size_Species_Mean <- data$Brain_Size_Species_Mean
 
 #creating model1: longevity ~ brain size
 model1 <- lm(MaxLongevity_m ~ Brain_Size_Species_Mean, data = data) #coef returns standardized model regression coefficients
@@ -143,6 +145,8 @@ p2 <- ggplot(data, aes(x = log(Brain_Size_Species_Mean), y = log(MaxLongevity_m)
   labs(title = "Log of Brain Size vs. Log of Longevity", x = "Log of Longevity", y = "Log of Brain Size") +
   theme_minimal()
 p2
+
+grid.arrange(p1, p2, ncol = 2)
 ```
 - tried to use geom_smooth() but didn't like how the line it created wasn't making contact with the x axis. is there a way to fix this while still using geom smooth? instead here i just plotted a line equal to the intercept and slope i established above with my two models
 
@@ -173,26 +177,6 @@ beta1
 ## Part 3: 
 
 Using your model, add lines for the 90 percent confidence and prediction interval bands on the plot and add a legend to differentiate between the lines.
-
-idek of this is correct? why are my lines curving for confidence interval?
-```{r}
-m <- lm(longevity ~ Brain_Size_Species_Mean, data = monkey_clean)
-summary(m)
-ci1 <- confint(m, level = 0.90); ci1
-ci2 <- predict(m, newdata = data.frame(Brain_Size_Species_Mean = monkey_clean$Brain_Size_Species_Mean), interval = "confidence",
-    level = 0.90) #max suggested this and the lines variable to make the ci and slope lines
-head(ci2)
-lines <- data.frame(ci2)
-
-#trying to make a plot for confidence intervals
-model_graph<- ggplot(monkey_clean, aes(x = brain, y = longevity))   + 
-  geom_point() +    
-  geom_line(aes(x = monkey_clean$Brain_Size_Species_Mean, y = lines$fit), col = "blue") +
-  geom_line(aes(x = monkey_clean$Brain_Size_Species_Mean, y = lines$upr), col = "red") +
-  geom_line(aes(x = monkey_clean$Brain_Size_Species_Mean, y = lines$lwr), col = "red") +
-  labs(title = "Brain Size vs. Longevity")
-model_graph
-```
 
 For model 1: 
 ```{r}
@@ -226,7 +210,6 @@ lines(v_log, pi[, 2], col = "red")
 lines(v_log, pi[, 3], col = "red")  
 
 
-
 #is this how i could do this with ggplot? offered an alternative that looks more similar to how we did it in module 12
 ci_df <- as.data.frame(ci)
 pi_df <- as.data.frame(pi)
@@ -249,19 +232,33 @@ ggplot(data, aes(x = log_Brain_Size, y = log_Longevity)) +
   theme_minimal()
 ```
 I offered two different methods for the second model (the log one) for creating my confidence interval (one with plot and the other with ggplot). i'm open to any suggestions if anyone has any ideas on how to make these plots look better/more similar to the ones we see in the modules. 
+- I also can't tell if the lines are straight
 
 Part 4: Produce a point estimate and associated 90 percent PI for the longevity of a species whose brain weight is 800 gm. Do you trust the model to predict observations accurately for this value of the explanatory variable? Why or why not?
 ```{r}
 #for longevity ~ brain size
-p1 <- predict(model, newdata = data.frame(brain = 800), interval = "prediction", level = 0.90)
+p1 <- predict(model1, newdata = data.frame(brain = 800), interval = "prediction", level = 0.90)
 p1
 
 #for the log
 p2 <- predict(model2, newdata = data.frame(brain_log = 800), interval = "prediction", level = 0.90)
 p2
+
+new_value <- log(800)  # Log-transform the brain weight
+
+# Compute prediction interval
+pred_800 <- predict(m2, newdata = data.frame(log_Brain_Size = new_value), interval = "prediction", level = 0.90)
+
+# Transform back to the original scale
+exp(pred_800)
 ```
-Looking at your two models, which do you think is better? Why?
+I think what I wrote above is correct, but why is it giving me all of these values as outputs
+**Looking at your two models, which do you think is better? Why?**
+- when asking the model to make predictions for large values that exceed the range for the majority of points in the longevity vs. brain size normal regression, i am not entirely sure that i trust its capacity to predict these values. the log transformed data appears much more evenly distributed and for that reason i trust the log plot/prediction to better capture my data.
 
 1. I keep getting this warning message when I try to run my graphs and I have no idea how to get around it:
 "Warning: [38;5;242mAll aesthetics have length 1, but the data has 26 rows. [36mℹ[38;5;242m Please consider using `annotate()` or provide this layer with data containing a single row."
-2. 
+2. I had the hardest time working on this homework assignment. Honestly creating confidence intervals was a nightmare and probably took like 4 hours and still I have no idea if they are correct.
+3. I provided two different ways of making CIs for model 2 and would appreciate any feedback any peer commenter has regarding them. 
+4. I also had a very difficult time trying to create the function for part one. Functions are definitely not my thing but I recognize their important. Any feedback on Part 1 would also be amazing. 
+5. Something worth noting is that when I ran my rsquared values they were both very low, is the model that I created therefore not statistically signficant? Unsure

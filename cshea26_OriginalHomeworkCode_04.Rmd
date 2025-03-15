@@ -102,6 +102,7 @@ Z.prop.test <- function(p1, n1, p2 = NULL, n2 = NULL, p0, alternative = "two.sid
 ## 2) The dataset from Kamilar and Cooper has in it a large number of variables related to life history and body size. 
 - For this exercise, the end aim is to fit a simple linear regression model to predict longevity (MaxLongevity_m) measured in months from species’ brain size (Brain_Size_Species_Mean) measured in grams. Do the following for both longevity~brain size and log(longevity)~log(brain size):
 
+Part 1: Fit the regression model and, using {ggplot2}, produce a scatterplot with the fitted line superimposed upon the data. Append the the fitted model equation to your plot (HINT: use the function geom_text())
 ```{r}
 library(curl)
 library(ggplot2)
@@ -116,17 +117,67 @@ monkey_clean <- na.omit(monkey[, c("MaxLongevity_m", "Brain_Size_Species_Mean")]
 longevity <- monkey_clean$MaxLongevity_m
 brain <- monkey_clean$Brain_Size_Species_Mean #save brain size and longevity into variables
 
-y <- brain - mean(brain)
-x <- longevity - mean(longevity) # find the mean of each variable
+z <- data.frame(x = longevity, y = brain) # create a dataframe to display longevity and brain size means
 
-z <- data.frame(x = x, y = y) # create a dataframe to display longevity and brain size means
+model <- lm(y ~ x, data = z) # save lm func result in model
+
+intercept <- round(coef(model)[1], 2) # save x and y vals 
+slope <- round(coef(model)[2], 2)
+equation <- paste("y =", slope, "* x +", intercept) # format equation for geom_text header
 
 g <- ggplot(data = z, aes(x = x, y = y)) + 
   geom_point() +
   geom_smooth(method = "lm", formula = y ~ x) +
-  stat_regline_equation(aes(label = ..eq.label..)) # create a graph to display
+  geom_text(x = min(z$x), y = max(z$y), label = equation, hjust = 0, size = 5) +
+  labs(title = "Brain Size vs. Longevity", x = "Longevity", y = "Brain Size") +
+  theme_minimal() # create a graph to display
 
 g # shows the graph
 
 ```
+STILL NEED TO DO - PLOTTING LOGS: 
+```{r}
+
+```
+
+
+
+Part 2: Identify and interpret the point estimate of the slope (β1), as well as the outcome of the test associated with the hypotheses H0: β1 = 0; HA: β1 ≠ 0. Also, find a 90 percent CI for the slope (β1) parameter.
+
+An equation to use to calculate beta 1: 
+- beta1 <- cor(w, h) * (sd(h)/sd(w))
+where 
+- w <- d$weight (longevity)
+- h <- d$height (brain size)
+```{r}
+#assigning variables similar to module 12
+ci <- predict(model, newdata = data.frame(brain), interval = "confidence", level = 0.90) ##calculate the confidence interval
+
+info <- data.frame(cbind(brain, longevity, ci)) ##binding new data frame with confidence interval 
+
+names(info) <- c("x", "y", "CIfit", "CIlwr", "CIupr") #naming the columns
+
+pi <- predict(model, newdata = data.frame(brain), interval = "prediction", level = 0.90)  ##predict prediction interval 
+
+info_ci_pi <- cbind(info, pi) ##binding updated data frame
+
+names(info_ci_pi) <- c("x", "y", "CIfit", "CIlwr", "CIupr", "PIfit", "PIlwr", "PIupr") ##updated names of columns
+
+plot1b <- ggplot(data = info_ci_pi, aes(brain, longevity, label = rownames(info_ci_pi)))  ##drawing original plot with labels
+plot1b <- plot1b + geom_point(alpha = 1/2) + geom_line(aes(x = x, y = CIfit, colour = "fit")) + geom_line(aes(x = x, y = CIlwr, colour = "CI")) + geom_line(aes(x = x, y = CIupr, colour = "CI")) + geom_line(aes(x = x, y = PIlwr, colour = "PI")) + geom_line(aes(x = x, y = PIupr, colour = "PI")) + scale_color_manual(values = c("fit" = "black","CI" = "#F96900","PI" = "#00A5E0")) + theme(legend.position = "bottom", legend.title = element_blank()) ##drawing points and lines
+
+plot1b ##print graph 
+
+```
+because by beta1 value does not equal zero, we 
+
+```
+
+
+Part 3: Using your model, add lines for the 90 percent confidence and prediction interval bands on the plot and add a legend to differentiate between the lines.
+
+
+Part 4: Produce a point estimate and associated 90 percent PI for the longevity of a species whose brain weight is 800 gm. Do you trust the model to predict observations accurately for this value of the explanatory variable? Why or why not?
+
+Looking at your two models, which do you think is better? Why?
 

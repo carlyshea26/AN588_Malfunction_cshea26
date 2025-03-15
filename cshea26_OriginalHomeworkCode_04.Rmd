@@ -178,6 +178,13 @@ Part 3: Using your model, add lines for the 90 percent confidence and prediction
 
 
 Part 4: Produce a point estimate and associated 90 percent PI for the longevity of a species whose brain weight is 800 gm. Do you trust the model to predict observations accurately for this value of the explanatory variable? Why or why not?
+```{r}
+log.pt.est <- predict(logm, newdata = data.frame(Brain_Size_Species_Mean = 800), interval = "prediction", 
+    level = 0.90)  # for a single value
+log.pt.est
+```
+
+
 
 Looking at your two models, which do you think is better? Why?
 

@@ -95,7 +95,7 @@ Z.prop.test <- function(p1, n1, p2 = NULL, n2 = NULL, p0, alternative = "two.sid
   }
 }
 
-#need to create test now to validate results
+#need to create test now to validate results, i will try to do for final submission but am unsure what to use
 ```
 
 ## Question 2) The dataset from Kamilar and Cooper has in it a large number of variables related to life history and body size. 

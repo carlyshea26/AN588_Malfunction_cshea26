@@ -234,65 +234,6 @@ summary(model2)
 
 Using your model, add lines for the 90 percent confidence and prediction interval bands on the plot and add a legend to differentiate between the lines.
 
-For model 1: 
-```{r}
-v <- seq(from = min(data$Brain_Size_Species_Mean), to = max(data$Brain_Size_Species_Mean), length.out = 100)
-m <- lm(MaxLongevity_m ~ Brain_Size_Species_Mean, data = data)
-ci <- predict(m, newdata = data.frame(Brain_Size_Species_Mean = v), interval = "confidence", level = 0.90)
-pi <- predict(m, newdata = data.frame(Brain_Size_Species_Mean = v), interval = "prediction", level = 0.90)
-
-#cannot figure out how to do it with ggplot so doing it with general plot function
-plot(data$Brain_Size_Species_Mean, data$MaxLongevity_m)
-lines(v, ci[, 1], col = "black")
-lines(v, pi[, 2], col = "red")
-lines(v, pi[, 3], col = "red")
-```
-
-> AZ: I believe that you should have two sets of additional lines here, one for CI and one for PI>. I think that the simplest way to do this is to add CI upper, CI lower, PI upper, and PI lower as columns in your dataframe and then graph them using geom_line().
-
-For model 2: 
-```{r}
-#making log transformed variables
-data$log_Brain_Size <- log(data$Brain_Size_Species_Mean)
-data$log_Longevity <- log(data$MaxLongevity_m)
-
-m2 <- lm(log_Longevity ~ log_Brain_Size, data = data)
-v_log <- seq(from = min(data$log_Brain_Size), to = max(data$log_Brain_Size), length.out = 100)
-
-ci <- predict(m2, newdata = data.frame(log_Brain_Size = v_log), interval = "confidence", level = 0.90)
-pi <- predict(m2, newdata = data.frame(log_Brain_Size = v_log), interval = "prediction", level = 0.90)
-
-plot(data$log_Brain_Size, data$log_Longevity, 
-     xlab = "Log Brain Size", 
-     ylab = "Log Max Longevity", 
-     main = "Log Regression of Brain Size vs. Longevity")
-# add confidence/prediction intervals to the plot 
-lines(v_log, ci[, 1], col = "black")
-lines(v_log, pi[, 2], col = "red")
-lines(v_log, pi[, 3], col = "red")  
-
-#alternative way to create a plot with ggplot
-ci_df <- as.data.frame(ci)
-pi_df <- as.data.frame(pi)
-
-# rename columns to prevent duplication
-colnames(ci_df) <- c("fit", "ci_lwr", "ci_upr")
-colnames(pi_df) <- c("fit_pred", "pi_lwr", "pi_upr")
-
-# combine ci and pi into one data frame
-pred_df <- data.frame(log_Brain_Size = v_log, ci_df, pi_df)
-
-# plot alternative plot b using ggplot
-b <- ggplot(data, aes(x = log_Brain_Size, y = log_Longevity)) +
-  geom_point() +
-  geom_line(data = pred_df, aes(x = log_Brain_Size, y = fit), color = "black") +  
-  geom_line(data = pred_df, aes(x = log_Brain_Size, y = pi_lwr), color = "red") +   
-  geom_line(data = pred_df, aes(x = log_Brain_Size, y = pi_upr), color = "red") + 
-  labs(x = "Log Brain Size", y = "Log Max Longevity", 
-       title = "Log Regression of Brain Size vs. Longevity") +
-  theme_minimal()
-b
-```
 #Part 3: With Prediction Lines and CIs
 
 ```{r}
@@ -308,7 +249,7 @@ names(datas) <- c("Brain_Size_Species_Mean", "MaxLongevity_m", "CIfit", "CIlwr",
 a <- ggplot(datas, aes(x = Brain_Size_Species_Mean, y = MaxLongevity_m)) +
   geom_point(alpha = .7) +
   labs(x = "Brain Size", y = "Max Longevity", 
-       title = "Regression of Brain Size vs. Longevity", color = "Legend") +
+       title = "Regression of Brain Size vs. Longevity") +
   theme_minimal()
 a <- a + geom_text(x = 400, y = 225, label = mod1, color = "blue")
 
@@ -323,15 +264,11 @@ a <- a + geom_line(aes(y = CIlwr), color = "red", size = .5) +
 a <- a + geom_line(aes(y = PIlwr), linetype = "dotted", color = "blue", size = 1) + 
   geom_line(aes(y = PIupr), linetype = "dotted", color = "blue", size = 1)
 
-# making my labels and a legend
+# making my labels
 a <- a + labs(x = "Mean Brain Size (grams)", y = "Max Longevity (months)", title = "Regression of Brain Size vs. Longevity") 
 a
-a <- a + scale_color_manual(values = c("Data Points" = "black", 
-                                       "Regression Line" = "black", 
-                                       "90% CI" = "red", 
-                                       "90% PI" = "blue")) +
-  labs(color = "Legend")
 ```
+
 ```{r}
 #for model2 (log)
 ci_log <- predict(model2, interval = "confidence", level = 0.90)
@@ -357,29 +294,15 @@ c <- c + geom_line(aes(y = PIlwr_log), linetype = "dotted", color = "blue", size
 c <- c + labs(x = "Log of Mean Brain Size (grams)", y = "Log of Max Longevity (months)", title = "Regression for Log of Brain Size vs. Log of Longevity") 
 c
 ```
+
 ## Part 4: 
 
 Produce a point estimate and associated 90 percent PI for the longevity of a species whose brain weight is 800 gm. Do you trust the model to predict observations accurately for this value of the explanatory variable? Why or why not?
 ```{r}
-#for longevity ~ brain size
+#for longevity ~ brain size (not doing it for the log model)
 p1 <- predict(model1, newdata = data.frame(Brain_Size_Species_Mean = 800), interval = "prediction", level = 0.90)
-p1
-
-#for the log
-p2 <- predict(model2, newdata = data.frame(brain_log = 800), interval = "prediction", level = 0.90)
-p2
-
-new_value <- log(800)  # Log-transform the brain weight
-
-# Compute prediction interval
-pred_800 <- predict(m2, newdata = data.frame(log_Brain_Size = new_value), interval = "prediction", level = 0.90)
-
-# Transform back to the original scale
-exp(pred_800)
+p1 #making the data frame only look at a single category is very helpful and prevents R from giving you a million numbers back out
 ```
-I think what I wrote above is correct, but why is it giving me all of these values as outputs
-
-> AZ: You can fix the output by replacing "brain" in the "newdata = " section with the existing column name "Brain_Size_Species_Mean," as I have here.  I don't think that you need to give a log point estimate as well, so that should simplify things a lot!
 
 **Looking at your two models, which do you think is better? Why?**
 - when asking the model to make predictions for large values that exceed the range for the majority of points in the longevity vs. brain size normal regression, i am not entirely sure that i trust its capacity to predict these values. the log transformed data appears much more evenly distributed and for that reason i trust the log plot/prediction to better capture my data.
@@ -388,12 +311,15 @@ I think what I wrote above is correct, but why is it giving me all of these valu
 
 ^Noted and modified results in accordance with this feedback!
 
+## Final Thoughts/Feedback:
 1. I keep getting this warning message when I try to run my graphs and I have no idea how to get around it:
 "Warning: [38;5;242mAll aesthetics have length 1, but the data has 26 rows. [36mℹ[38;5;242m Please consider using `annotate()` or provide this layer with data containing a single row."
+^Worked around this, now I'm all set! Stemmed originally from how I cleaned my data
 2. I had the hardest time working on this homework assignment. Honestly creating confidence intervals was a nightmare and probably took like 4 hours and still I have no idea if they are correct.
-3. I provided two different ways of making CIs for model 2 and would appreciate any feedback any peer comment-er has regarding them. 
+3. I provided two different ways of making CI's for model 2 and would appreciate any feedback any peer comment-er has regarding them. 
 4. I also had a very difficult time trying to create the function for part one. Functions are definitely not my thing but I recognize their important. Any feedback on Part 1 would also be amazing. 
 5. Something worth noting is that when I ran my r-squared values they were both very low, is the model that I created therefore not statistically significant? Unsure
 6. I also recognize that I need to go back in and add more comments, which I will do before the final submission!
 
-> AZ: Overall, your code looks very good!  I think that most of the issues that you had were simply due to minor mistakes early on in the process being magnified throughout, like the removal of the NAs mentioned above.  Our results look fairly different, but that's sort of to be expected when you're dealing with such open-ended tasks that can be completed in many different ways.  Your excellent annotation was very helpful in figuring out how portions of your code corresponded to mine and vice versa.
+**Final Version Additional Comments:**
+After going through the comments left by my peer commentator and further testing different models and approaches to plotting my lines, I feel like I better understand how to apply the function I created in Question I to the sequential steps in Question 2. I like how my figures turned out overall! One challenge that I may revisit is creating a legend for my figures., something I wasn't entirely sure how to do.

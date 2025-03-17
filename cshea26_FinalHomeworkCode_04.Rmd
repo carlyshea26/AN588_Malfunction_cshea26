@@ -165,7 +165,7 @@ model1 <- lm(MaxLongevity_m ~ Brain_Size_Species_Mean, data = data) #coef return
 
 # using the function i created above
 equation1 <- function(x) {
-   label = paste("y = ", round(coef(model1)[1], 2), " + ", round(coef(model1)[2], 2), " * x")
+   label = paste("y = ", round(coef(x)[1], 2), " + ", round(coef(x)[2], 2), " * x")
 }
 mod1 <- equation1(model1)
 
@@ -178,8 +178,8 @@ g <- ggplot(data = datas, aes(x = Brain_size, y = Max_longevity)) + # building t
   ylab("Max Longevity (months)") + 
   ggtitle("Regression Model for Longevity ~ Brain Size") 
 g <- g + geom_point()  # creates my scatterplot
-g <- g + geom_smooth(method = "lm", formula= y~x, color = "forestgreen") # makes the regression line
-g <- g + geom_text(x = 400, y = 300, label = mod1, color = "forestgreen") #x and y here center my equation wherever i tell it to
+g <- g + geom_smooth(method = "lm", formula= y~x, color = "blue") # makes the regression line
+g <- g + geom_text(x = 400, y = 300, label = mod1, color = "blue") #x and y here center my equation wherever i tell it to
 g
 ```
 ### Alternative Method (for the log now)
@@ -188,16 +188,16 @@ g
 datalog <- data.frame(Log_brain_size = log(data$Brain_Size_Species_Mean), Log_max_longevity = log(data$MaxLongevity_m))
 
 model2 <- lm(log(MaxLongevity_m) ~ log(Brain_Size_Species_Mean), data = data)
-mod2 <- equation1(model2) #running into an error here where its giving me the equation for my model 1
+mod2 <- equation1(model2) #running into an error here where its giving me the equation for my model 1; changed the function equation because i accidentally wrote model1 instead of x 
 
 #making plot for model2
 b <- ggplot(data = datalog, aes(x = Log_brain_size, y = Log_max_longevity)) +
   xlab("Log of Mean Brain Size (grams)") + 
   ylab("Log of Max Longevity (months)") + 
   ggtitle("Regression Model for Log of Longevity ~ Log of Brain Size") 
-b <- b + geom_point() + geom_smooth(method = "lm", color = "#7db569") + geom_text(x = 5, y = 5, label = mod2, color = "#7db569")
+b <- b + geom_point() + geom_smooth(method = "lm", color = "red") + geom_text(x = 5, y = 5, label = mod2, color = "red")
 b
-
+grid.arrange(g, b, ncol = 2)
 ```
 
 Overall, after playing around with different formatting styles of the regression line/plot, I like how I can integrate my function into my plot by writing an equation directly from it. This is something I struggled with immensely initially, and with help from my peer reviewer, an element in this homework assignment that I am very proud of now. 
@@ -212,19 +212,23 @@ where
 - w <- d$weight (longevity)
 - h <- d$height (brain size)
 ```{r}
-w <- data$MaxLongevity_m
-h <- data$Brain_Size_Species_Mean
+w <- data$Brain_Size_Species_Mean #originally had these swapped, they are correct now and align with the summary information below
+h <- data$MaxLongevity_m
 beta1 <- cor(w, h) * (sd(h)/sd(w))
 beta1
 
 #to determine beta1 for the log plots
-w <- log(data$MaxLongevity_m)
-h <- log(data$Brain_Size_Species_Mean)
+w <- log(data$Brain_Size_Species_Mean)
+h <- log(data$MaxLongevity_m)
 beta1 <- cor(w, h) * (sd(h)/sd(w))
 beta1
+
+#another way to visualize this information is calling for a summary of the two different models i created
+summary(model1) #estimate std. for Brain_Size_Species_Mean is going to be the value that represents beta1
+summary(model2)
 ```
 - Nonzero value of𝛽1 signifies:
--  My Guess: the estimated 𝛽1 in both cases yields a non-zero value, meaning that we can reject the null hypothesis H0 which argues that 𝛽1 = 0, and therefore accept the HA (alternative hypothesis) that 𝛽1 does not equal 0.
+-  My guess: the estimated 𝛽1 in both cases yields a non-zero value, meaning that we can reject the null hypothesis H0 which argues that 𝛽1 = 0, and therefore accept the HA (alternative hypothesis) that 𝛽1 does not equal 0.
 
 ## Part 3: 
 

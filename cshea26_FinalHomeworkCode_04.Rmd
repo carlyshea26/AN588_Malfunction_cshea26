@@ -1,0 +1,285 @@
+---
+title: "cshea26_OriginalHomeworkCode_04"
+author: "Carly S McDermott"
+date: "2025-03-14"
+output: 
+  html_document:
+    theme: flatly
+    toc: true
+    toc_float: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+INFO: 
+- Z and T tests are used to evaluate whether a given sample statistic (e.g., a mean or proportion) deviates significantly from what is expected under a null model or whether two samples statistics deviate significantly from one another.
+
+- We REJECT a H0 if the p value obtained for a given Z or T test statistic is < α
+CIs for our sample statistic are calculated as mean ± T(1−α/2) or Z(1−α/2) x SEM, and we can REJECT a H0 if the (1-α) CI around does not include the expected value of the statistic
+When the sample size > 30, or when we are dealing with proportions, we use Z quantiles for calculating CIs and p values, but for sample size < 30, we use T quantiles
+
+
+
+## 1) Write a simple R function, Z.prop.test(), that can perform one- or two-sample Z-tests for proportion data, using the following guidelines:
+- Your function should take the following arguments: p1 and n1 (no default) representing the estimated proportion and sample size (i.e., based on your sample data); p2 and n2 (both defaulting to NULL) that contain a second sample’s proportion and sample size data in the event of a two-sample test; p0 (no default) as the expected value for the population proportion; and alternative (default “two.sided”) and conf.level (default 0.95), to be used in the same way as in the function t.test().
+- When conducting a two-sample test, it should be p1 that is tested as being smaller or larger than p2 when alternative=“less” or alternative=“greater”, the same as in the use of x and y in the function t.test().
+The function should perform a one-sample Z-test using p1, n1, and p0 if either p2 or n2 (or both) is NULL.
+- The function should contain a check for the rules of thumb we have talked about (\(n * p > 5\) and \(n * (1-p) > 5\)) to ensure the validity of assuming the normal distribution in both the one- and two-sample settings. If this is violated, the function should still complete but it should also print an appropriate warning message.
+- The function should return a list containing the members Z (the test statistic), P (the appropriate p value), and CI (the two-sided CI with respect to “conf.level” around p1 in the case of a one-sample test and around p2-p1 in the case of a two-sample test). - For all test alternatives (“two.sided”, “greater”, “less”), calculate symmetric CIs based on quantiles of the normal distribution rather than worrying about calculating single-limit confidence bounds.
+
+```{r}
+#start with determining if we require a one or two sample test (first part of the function determines if we require a one sample and then goes into different alternatives within the one sample z test)
+Z.prop.test <- function(p1, n1, p2 = NULL, n2 = NULL, p0, alternative = "two.sided", conf.level = 0.95) {
+  if (is.null(p2) || is.null(n2)) {
+    z <- (p1 - p0)/sqrt(p0*(1 -p0)/n1) #mean of sample observations minus expected mean, divided by sample standard of deviations divided by square root of number of sample observations
+    
+    if (alternative == "greater") {
+      pval <- pnorm(z, lower.tail = FALSE) #checking if alternative is greater or less than (indicates if we need to use upper or lower tail)
+    } else if (alternative == "less") {
+      pval <- pnorm(z, lower.tail = TRUE)
+    } else if (alternative == "two.sided") { #otherwise checking if z is greater than zero, if so we do a lower tail test, if not we do an upper tail test
+      if (z > 0) {
+        pval <- 2 * pnorm(z, lower.tail = FALSE)
+      } else {
+        pval <- 2 * pnorm(z, lower.tail = TRUE)
+      }
+    }
+    
+    #creating warning message to ensure the validity of assuming the normal distribution
+    if ((n1 * p0 < 5) || (n1 * (1-p0) < 5)) {
+      warning("invalid assumption of normal distribution") 
+    }
+    
+    lower <- p1 - qnorm(0.975) * sqrt(p1 * (1 - p1)/n1)
+    upper <- p1 + qnorm(0.975) * sqrt(p1 * (1 - p1)/n1)
+    ci <- c(lower, upper) #creating confidence interval based on upper and lower bounds (.975 and .025)
+    
+    result <- list(test.type = "One-Sample Proportion Z-test", 
+                                alternative = alternative,
+                                z.test.stat = as.numeric(z), 
+                                p.value = as.numeric(pval), 
+                                confidence.interval = ci)
+    return(result)
+  }
+  
+  #for the two sample test:
+  else {
+    pstar <- ((p1*n1) + (p2*n2))/(n1 + n2) #pstar is the pooled proportion of p; originally i had it as p0 here but Akiva suggested not doing this since that is used for the one sample test (not the 2)
+    
+    z <- (p2 - p1)/sqrt((pstar * (1 - pstar)) * (1/n1 + 1/n2))
+    
+    if (alternative == "greater") {
+        pval <- pnorm(z, lower.tail = FALSE)
+      }
+      if (alternative == "less") {
+        pval <- pnorm(z, lower.tail = TRUE)
+      }
+      if (alternative == "two.sided") {
+        pval <- 1 - pnorm(z, lower.tail = TRUE) + pnorm(z, lower.tail = FALSE)
+          }
+    
+    if ((n1 * pstar < 5) | (n1 * (1 - pstar) < 5 ) | (n2 * pstar < 5) | (n2 * (1 - pstar) < 5)) {
+      warning("invalid assumption of normal distribution")
+  }
+  crit <- qnorm((1 + conf.level)/2) # using this to find the critical value
+  se <- crit*sqrt((p1*(1-p1))/n1) + (p2 * (1-p2)/n2)
+  upper <- (p1 - p2) + se
+  lower <- (p1 - p2) - se
+  ci <- c(lower, upper)
+  
+    result2 <- list(test.type = "Two-Sample Proportion Z-test", 
+                                alternative = alternative,
+                                z.test.statistic = as.numeric(z), 
+                                p.value = as.numeric(pval), 
+                                confidence.interval = ci, 
+                                critical.value = as.numeric(crit))     #here i also returned critical value
+    return(result2)
+  }
+}
+```
+
+## Question 2) The dataset from Kamilar and Cooper has in it a large number of variables related to life history and body size. 
+- For this exercise, the end aim is to fit a simple linear regression model to predict longevity (MaxLongevity_m) measured in months from species’ brain size (Brain_Size_Species_Mean) measured in grams. Do the following for both longevity~brain size and log(longevity)~log(brain size):
+
+## Part 1: 
+Fit the regression model and, using {ggplot2}, produce a scatterplot with the fitted line superimposed upon the data. Append the the fitted model equation to your plot (HINT: use the function geom_text())
+reattempt:
+```{r}
+library(curl)
+library(ggplot2)
+library(ggpubr)
+library(gridExtra)
+
+data <- curl("https://raw.githubusercontent.com/fuzzyatelin/fuzzyatelin.github.io/master/AN588_Fall23/KamilarAndCooperData.csv") #load data
+data <- read.csv(data, header = TRUE, sep = ",", stringsAsFactors = FALSE)
+data <- na.omit(data) # clean data to get longevity and brain size (NA categories)
+Brain_Size_Species_Mean <- data$Brain_Size_Species_Mean
+
+#creating model1: longevity ~ brain size
+model1 <- lm(MaxLongevity_m ~ Brain_Size_Species_Mean, data = data) #coef returns standardized model regression coefficients
+intercept1 <- coef(model1)["(Intercept)"]
+slope1 <- coef(model1)["Brain_Size_Species_Mean"]
+
+# creating model 2: log(longevity) ~ log(brain size), doing the same as above but with the logs
+model2 <- lm(log(MaxLongevity_m) ~ log(Brain_Size_Species_Mean), data = data)
+intercept2 <- coef(model2)["(Intercept)"]
+slope2 <- coef(model2)["log(Brain_Size_Species_Mean)"]
+
+#plotting model1 in ggplot as p1
+p1 <- ggplot(data, aes(x = Brain_Size_Species_Mean, y = MaxLongevity_m)) +
+  geom_point(alpha = 0.5) +
+  geom_abline(intercept = intercept1, slope = slope1, color = "blue") + geom_text(aes(x = max(Brain_Size_Species_Mean), y = max(MaxLongevity_m), 
+#this next part gives me my equation for the line                                                              
+                label = paste("y = ", round(coef(model1)[1], 2), " + ", round(coef(model1)[2], 2), " * x")), 
+            hjust = 1, vjust = 1, size = 5) +
+  labs(title = "Longevity vs Brain Size", x = "Brain Size (grams)", y = "Max Longevity (months)") +  theme_minimal()
+p1 
+
+#p2 represents linear regression plot for logs
+p2 <- ggplot(data, aes(x = log(Brain_Size_Species_Mean), y = log(MaxLongevity_m))) +
+  geom_point(alpha = 0.5) +
+  geom_abline(intercept = intercept2, slope = slope2, color = "red") +
+  geom_text(aes(x = max(log(Brain_Size_Species_Mean)), y = max(log(MaxLongevity_m)), 
+                label = paste("y = ", round(coef(model2)[1], 2), " + ", round(coef(model2)[2], 2), " * x")), 
+            hjust = 1, vjust = 1) +
+  labs(title = "Log of Brain Size vs. Log of Longevity", x = "Log of Longevity", y = "Log of Brain Size") +
+  theme_minimal()
+p2
+
+grid.arrange(p1, p2, ncol = 2)
+```
+- tried to use geom_smooth() but didn't like how the line it created wasn't making contact with the x axis. is there a way to fix this while still using geom smooth? instead here i just plotted a line equal to the intercept and slope i established above with my two models
+
+## Alternative Method (based on the model i created for Quesiton 1)
+```{r}
+
+```
+
+
+## Part 2: 
+
+Identify and interpret the point estimate of the slope (β1), as well as the outcome of the test associated with the hypotheses H0: β1 = 0; HA: β1 ≠ 0. Also, find a 90 percent CI for the slope (β1) parameter.
+
+An equation I used to calculate beta 1: 
+- beta1 <- cor(w, h) * (sd(h)/sd(w))
+where 
+- w <- d$weight (longevity)
+- h <- d$height (brain size)
+```{r}
+w <- data$MaxLongevity_m
+h <- data$Brain_Size_Species_Mean
+beta1 <- cor(w, h) * (sd(h)/sd(w))
+beta1
+
+#to determine beta1 for the log plots
+w <- log(data$MaxLongevity_m)
+h <- log(data$Brain_Size_Species_Mean)
+beta1 <- cor(w, h) * (sd(h)/sd(w))
+beta1
+```
+- I'm not entirely sure what a nonzero value of  𝛽1 signifies? Rejecting some sort of null hypothesis? Would love some input
+- My best guess: the estimated 𝛽1 in both cases yields a non-zero value, meaning that we can reject the null hypothesis H0 which argues that 𝛽1 = 0, and therefore accept the HA (alternative hypothesis) that 𝛽1 does not equal 0.
+
+## Part 3: 
+
+Using your model, add lines for the 90 percent confidence and prediction interval bands on the plot and add a legend to differentiate between the lines.
+
+For model 1: 
+```{r}
+v <- seq(from = min(data$Brain_Size_Species_Mean), to = max(data$Brain_Size_Species_Mean), length.out = 100)
+m <- lm(MaxLongevity_m ~ Brain_Size_Species_Mean, data = data)
+ci <- predict(m, newdata = data.frame(Brain_Size_Species_Mean = v), interval = "confidence", level = 0.90)
+pi <- predict(m, newdata = data.frame(Brain_Size_Species_Mean = v), interval = "prediction", level = 0.90)
+
+#cannot figure out how to do it with ggplot so doing it with general plot function
+plot(data$Brain_Size_Species_Mean, data$MaxLongevity_m)
+lines(v, ci[, 1], col = "black")
+lines(v, pi[, 2], col = "red")
+lines(v, pi[, 3], col = "red")
+```
+
+> AZ: I believe that you should have two sets of additional lines here, one for CI and one for PI>. I think that the simplest way to do this is to add CI upper, CI lower, PI upper, and PI lower as columns in your dataframe and then graph them using geom_line().
+
+For model 2: 
+```{r}
+data$log_Brain_Size <- log(data$Brain_Size_Species_Mean)
+data$log_Longevity <- log(data$MaxLongevity_m)
+m2 <- lm(log_Longevity ~ log_Brain_Size, data = data)
+v_log <- seq(from = min(data$log_Brain_Size), to = max(data$log_Brain_Size), length.out = 100)
+
+ci <- predict(m2, newdata = data.frame(log_Brain_Size = v_log), interval = "confidence", level = 0.90)
+pi <- predict(m2, newdata = data.frame(log_Brain_Size = v_log), interval = "prediction", level = 0.90)
+
+plot(data$log_Brain_Size, data$log_Longevity, 
+     xlab = "Log Brain Size", 
+     ylab = "Log Max Longevity", 
+     main = "Log Regression of Brain Size vs. Longevity")
+lines(v_log, ci[, 1], col = "black")  
+lines(v_log, pi[, 2], col = "red")    
+lines(v_log, pi[, 3], col = "red")  
+
+
+#is this how i could do this with ggplot? offered an alternative that looks more similar to how we did it in module 12
+ci_df <- as.data.frame(ci)
+pi_df <- as.data.frame(pi)
+
+# Rename columns to prevent duplication
+colnames(ci_df) <- c("fit", "ci_lwr", "ci_upr")
+colnames(pi_df) <- c("fit_pred", "pi_lwr", "pi_upr")
+
+# Combine into a single data frame
+pred_df <- data.frame(log_Brain_Size = v_log, ci_df, pi_df)
+
+# Plot using ggplot2
+ggplot(data, aes(x = log_Brain_Size, y = log_Longevity)) +
+  geom_point() +
+  geom_line(data = pred_df, aes(x = log_Brain_Size, y = fit), color = "black") +  
+  geom_line(data = pred_df, aes(x = log_Brain_Size, y = pi_lwr), color = "red") +   
+  geom_line(data = pred_df, aes(x = log_Brain_Size, y = pi_upr), color = "red") + 
+  labs(x = "Log Brain Size", y = "Log Max Longevity", 
+       title = "Log Regression of Brain Size vs. Longevity") +
+  theme_minimal()
+```
+I offered two different methods for the second model (the log one) for creating my confidence interval (one with plot and the other with ggplot). i'm open to any suggestions if anyone has any ideas on how to make these plots look better/more similar to the ones we see in the modules. 
+- I also can't tell if the lines are straight
+
+## Part 4: 
+
+Produce a point estimate and associated 90 percent PI for the longevity of a species whose brain weight is 800 gm. Do you trust the model to predict observations accurately for this value of the explanatory variable? Why or why not?
+```{r}
+#for longevity ~ brain size
+p1 <- predict(model1, newdata = data.frame(Brain_Size_Species_Mean = 800), interval = "prediction", level = 0.90)
+p1
+
+#for the log
+p2 <- predict(model2, newdata = data.frame(brain_log = 800), interval = "prediction", level = 0.90)
+p2
+
+new_value <- log(800)  # Log-transform the brain weight
+
+# Compute prediction interval
+pred_800 <- predict(m2, newdata = data.frame(log_Brain_Size = new_value), interval = "prediction", level = 0.90)
+
+# Transform back to the original scale
+exp(pred_800)
+```
+I think what I wrote above is correct, but why is it giving me all of these values as outputs
+
+> AZ: You can fix the output by replacing "brain" in the "newdata = " section with the existing column name "Brain_Size_Species_Mean," as I have here.  I don't think that you need to give a log point estimate as well, so that should simplify things a lot!
+
+**Looking at your two models, which do you think is better? Why?**
+- when asking the model to make predictions for large values that exceed the range for the majority of points in the longevity vs. brain size normal regression, i am not entirely sure that i trust its capacity to predict these values. the log transformed data appears much more evenly distributed and for that reason i trust the log plot/prediction to better capture my data.
+
+> AZ: It's difficult to give detailed feedback on this question, as our datasets are clearly different and are therefore giving us different values for just about everything.  I'm pretty sure that my answers are correct, as they're the same as Yinuo's.  If I had to guess, I think that it may be an issue with your removal of NAs at the beginning.  That's a good practice, but it would be best to remove rows only if they have NAs in the two relevant columns (there are way fewer of these).  I'd test this out and see if it gives you results more in line with ours.  Apart from that everything looks good to me (outside of the issues with CI and PI lines noted above), but again, it's difficult to assess given how different our values are.
+
+1. I keep getting this warning message when I try to run my graphs and I have no idea how to get around it:
+"Warning: [38;5;242mAll aesthetics have length 1, but the data has 26 rows. [36mℹ[38;5;242m Please consider using `annotate()` or provide this layer with data containing a single row."
+2. I had the hardest time working on this homework assignment. Honestly creating confidence intervals was a nightmare and probably took like 4 hours and still I have no idea if they are correct.
+3. I provided two different ways of making CIs for model 2 and would appreciate any feedback any peer commenter has regarding them. 
+4. I also had a very difficult time trying to create the function for part one. Functions are definitely not my thing but I recognize their important. Any feedback on Part 1 would also be amazing. 
+5. Something worth noting is that when I ran my rsquared values they were both very low, is the model that I created therefore not statistically signficant? Unsure
+6. I also regocnize that I need to go back in and add more comments, which I will do before the final submission!
+
+> AZ: Overall, your code looks very good!  I think that most of the issues that you had were simply due to minor mistakes early on in the process being magnified throughout, like the removal of the NAs mentioned above.  Our results look fairly different, but that's sort of to be expected when you're dealing with such open-ended tasks that can be completed in many different ways.  Your excellent annotation was very helpful in figuring out how portions of your code corresponded to mine and vice versa.

@@ -258,6 +258,7 @@ I think what I wrote above is correct, but why is it giving me all of these valu
 **Looking at your two models, which do you think is better? Why?**
 - when asking the model to make predictions for large values that exceed the range for the majority of points in the longevity vs. brain size normal regression, i am not entirely sure that i trust its capacity to predict these values. the log transformed data appears much more evenly distributed and for that reason i trust the log plot/prediction to better capture my data.
 
+## Final Thoughts Regarding this HW Assignment:
 1. I keep getting this warning message when I try to run my graphs and I have no idea how to get around it:
 "Warning: [38;5;242mAll aesthetics have length 1, but the data has 26 rows. [36mℹ[38;5;242m Please consider using `annotate()` or provide this layer with data containing a single row."
 2. I had the hardest time working on this homework assignment. Honestly creating confidence intervals was a nightmare and probably took like 4 hours and still I have no idea if they are correct.

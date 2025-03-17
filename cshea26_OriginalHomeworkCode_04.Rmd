@@ -254,7 +254,7 @@ pred_800 <- predict(m2, newdata = data.frame(log_Brain_Size = new_value), interv
 # Transform back to the original scale
 exp(pred_800)
 ```
-I think what I wrote above is correct, but why is it giving me all of these values as outputs
+I think what I wrote above is correct, but why is it giving me all of these values as outputs?
 **Looking at your two models, which do you think is better? Why?**
 - when asking the model to make predictions for large values that exceed the range for the majority of points in the longevity vs. brain size normal regression, i am not entirely sure that i trust its capacity to predict these values. the log transformed data appears much more evenly distributed and for that reason i trust the log plot/prediction to better capture my data.
 

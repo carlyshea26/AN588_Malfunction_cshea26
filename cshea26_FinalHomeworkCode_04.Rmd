@@ -293,7 +293,7 @@ b <- ggplot(data, aes(x = log_Brain_Size, y = log_Longevity)) +
   theme_minimal()
 b
 ```
-#Part 3 Alternative: With Prediction Lines and CIs
+#Part 3: With Prediction Lines and CIs
 
 ```{r}
 #for model 1
@@ -306,22 +306,22 @@ names(datas) <- c("Brain_Size_Species_Mean", "MaxLongevity_m", "CIfit", "CIlwr",
 
 #make plot for model 1 (alpha = 1 makes my points solid - not transparent)
 a <- ggplot(datas, aes(x = Brain_Size_Species_Mean, y = MaxLongevity_m)) +
-  geom_point(alpha = 1) +
+  geom_point(alpha = .7) +
   labs(x = "Brain Size", y = "Max Longevity", 
-       title = "Regression of Brain Size vs. Longevity") +
+       title = "Regression of Brain Size vs. Longevity", color = "Legend") +
   theme_minimal()
-a <- a + geom_text(x = 350, y = 250, label = mod1, color = "blue")
+a <- a + geom_text(x = 400, y = 225, label = mod1, color = "blue")
 
 # adding my regression line (black)
 a <- a + geom_line(aes(y = CIfit), size = 1)
 
 # then add 90% confidence intervals (dotted red lines)
-a <- a + geom_line(aes(y = CIlwr), linetype = "dotted", color = "90% CI", size = 1) + 
-  geom_line(aes(y = CIupr), linetype = "dotted", color = "90% CI", size = 1)
+a <- a + geom_line(aes(y = CIlwr), color = "red", size = .5) + 
+  geom_line(aes(y = CIupr), color = "red", size = .5)
 
-# then add prediction intervals (blue)
-a <- a + geom_line(aes(y = PIlwr), color = "90% PI", size = 1) + 
-  geom_line(aes(y = PIupr), color = "90% PI", size = 1)
+# then add prediction intervals
+a <- a + geom_line(aes(y = PIlwr), linetype = "dotted", color = "blue", size = 1) + 
+  geom_line(aes(y = PIupr), linetype = "dotted", color = "blue", size = 1)
 
 # making my labels and a legend
 a <- a + labs(x = "Mean Brain Size (grams)", y = "Max Longevity (months)", title = "Regression of Brain Size vs. Longevity") 
@@ -331,15 +331,32 @@ a <- a + scale_color_manual(values = c("Data Points" = "black",
                                        "90% CI" = "red", 
                                        "90% PI" = "blue")) +
   labs(color = "Legend")
-
-#for model2 (log)
-ci <- predict(model2, interval = "confidence", level = 0.90)
-pi <- predict(model2, interval = "prediction", level = 0.90)
 ```
+```{r}
+#for model2 (log)
+ci_log <- predict(model2, interval = "confidence", level = 0.90)
+pi_log <- predict(model2, interval = "prediction", level = 0.90)
 
+#adding predictions to datalog df:
+datalog <- cbind(datalog, ci_log, pi_log)
+names(datalog) <- c("Log_brain_size", "Log_max_longevity", "CIfit_log", "CIlwr_log", "CIupr_log", "PIfit_log", "PIlwr_log", "PIupr_log")
 
+#make plot for model 2 (alpha = 1 makes my points solid - not transparent, here i set to .7)
+c <- ggplot(data = datalog, aes(x = Log_brain_size, y = Log_max_longevity))
+c <- c + geom_point() + geom_smooth(method = "lm", color = "black") + geom_text(x = 5.2, y = 5.1, label = mod2, color = "red") #adding regression line
 
+# then add 90% confidence intervals (dotted red lines)
+c <- c + geom_line(aes(y = CIlwr_log), color = "red", size = .5) + 
+  geom_line(aes(y = CIupr_log), color = "red", size = .5)
 
+# then add prediction intervals
+c <- c + geom_line(aes(y = PIlwr_log), linetype = "dotted", color = "blue", size = 1) + 
+  geom_line(aes(y = PIupr_log), linetype = "dotted", color = "blue", size = 1)
+
+# making my labels and a legend
+c <- c + labs(x = "Log of Mean Brain Size (grams)", y = "Log of Max Longevity (months)", title = "Regression for Log of Brain Size vs. Log of Longevity") 
+c
+```
 ## Part 4: 
 
 Produce a point estimate and associated 90 percent PI for the longevity of a species whose brain weight is 800 gm. Do you trust the model to predict observations accurately for this value of the explanatory variable? Why or why not?
@@ -369,12 +386,14 @@ I think what I wrote above is correct, but why is it giving me all of these valu
 
 > AZ: It's difficult to give detailed feedback on this question, as our datasets are clearly different and are therefore giving us different values for just about everything.  I'm pretty sure that my answers are correct, as they're the same as Yinuo's.  If I had to guess, I think that it may be an issue with your removal of NAs at the beginning.  That's a good practice, but it would be best to remove rows only if they have NAs in the two relevant columns (there are way fewer of these).  I'd test this out and see if it gives you results more in line with ours.  Apart from that everything looks good to me (outside of the issues with CI and PI lines noted above), but again, it's difficult to assess given how different our values are.
 
+^Noted and modified results in accordance with this feedback!
+
 1. I keep getting this warning message when I try to run my graphs and I have no idea how to get around it:
 "Warning: [38;5;242mAll aesthetics have length 1, but the data has 26 rows. [36mℹ[38;5;242m Please consider using `annotate()` or provide this layer with data containing a single row."
 2. I had the hardest time working on this homework assignment. Honestly creating confidence intervals was a nightmare and probably took like 4 hours and still I have no idea if they are correct.
-3. I provided two different ways of making CIs for model 2 and would appreciate any feedback any peer commenter has regarding them. 
+3. I provided two different ways of making CIs for model 2 and would appreciate any feedback any peer comment-er has regarding them. 
 4. I also had a very difficult time trying to create the function for part one. Functions are definitely not my thing but I recognize their important. Any feedback on Part 1 would also be amazing. 
-5. Something worth noting is that when I ran my rsquared values they were both very low, is the model that I created therefore not statistically signficant? Unsure
-6. I also regocnize that I need to go back in and add more comments, which I will do before the final submission!
+5. Something worth noting is that when I ran my r-squared values they were both very low, is the model that I created therefore not statistically significant? Unsure
+6. I also recognize that I need to go back in and add more comments, which I will do before the final submission!
 
 > AZ: Overall, your code looks very good!  I think that most of the issues that you had were simply due to minor mistakes early on in the process being magnified throughout, like the removal of the NAs mentioned above.  Our results look fairly different, but that's sort of to be expected when you're dealing with such open-ended tasks that can be completed in many different ways.  Your excellent annotation was very helpful in figuring out how portions of your code corresponded to mine and vice versa.

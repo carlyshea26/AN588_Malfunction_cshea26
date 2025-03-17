@@ -321,5 +321,5 @@ p1 #making the data frame only look at a single category is very helpful and pre
 5. Something worth noting is that when I ran my r-squared values they were both very low, is the model that I created therefore not statistically significant? Unsure
 6. I also recognize that I need to go back in and add more comments, which I will do before the final submission!
 
-**Final Version Additional Comments:**
+**Final Version Additional Comments:** 
 After going through the comments left by my peer commentator and further testing different models and approaches to plotting my lines, I feel like I better understand how to apply the function I created in Question I to the sequential steps in Question 2. I like how my figures turned out overall! One challenge that I may revisit is creating a legend for my figures., something I wasn't entirely sure how to do.

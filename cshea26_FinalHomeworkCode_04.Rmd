@@ -252,8 +252,10 @@ lines(v, pi[, 3], col = "red")
 
 For model 2: 
 ```{r}
+#making log transformed variables
 data$log_Brain_Size <- log(data$Brain_Size_Species_Mean)
 data$log_Longevity <- log(data$MaxLongevity_m)
+
 m2 <- lm(log_Longevity ~ log_Brain_Size, data = data)
 v_log <- seq(from = min(data$log_Brain_Size), to = max(data$log_Brain_Size), length.out = 100)
 
@@ -264,24 +266,24 @@ plot(data$log_Brain_Size, data$log_Longevity,
      xlab = "Log Brain Size", 
      ylab = "Log Max Longevity", 
      main = "Log Regression of Brain Size vs. Longevity")
-lines(v_log, ci[, 1], col = "black")  
-lines(v_log, pi[, 2], col = "red")    
+# add confidence/prediction intervals to the plot 
+lines(v_log, ci[, 1], col = "black")
+lines(v_log, pi[, 2], col = "red")
 lines(v_log, pi[, 3], col = "red")  
 
-
-#is this how i could do this with ggplot? offered an alternative that looks more similar to how we did it in module 12
+#alternative way to create a plot with ggplot
 ci_df <- as.data.frame(ci)
 pi_df <- as.data.frame(pi)
 
-# Rename columns to prevent duplication
+# rename columns to prevent duplication
 colnames(ci_df) <- c("fit", "ci_lwr", "ci_upr")
 colnames(pi_df) <- c("fit_pred", "pi_lwr", "pi_upr")
 
-# Combine into a single data frame
+# combine ci and pi into one data frame
 pred_df <- data.frame(log_Brain_Size = v_log, ci_df, pi_df)
 
-# Plot using ggplot2
-ggplot(data, aes(x = log_Brain_Size, y = log_Longevity)) +
+# plot alternative plot b using ggplot
+b <- ggplot(data, aes(x = log_Brain_Size, y = log_Longevity)) +
   geom_point() +
   geom_line(data = pred_df, aes(x = log_Brain_Size, y = fit), color = "black") +  
   geom_line(data = pred_df, aes(x = log_Brain_Size, y = pi_lwr), color = "red") +   
@@ -289,9 +291,54 @@ ggplot(data, aes(x = log_Brain_Size, y = log_Longevity)) +
   labs(x = "Log Brain Size", y = "Log Max Longevity", 
        title = "Log Regression of Brain Size vs. Longevity") +
   theme_minimal()
+b
 ```
-I offered two different methods for the second model (the log one) for creating my confidence interval (one with plot and the other with ggplot). i'm open to any suggestions if anyone has any ideas on how to make these plots look better/more similar to the ones we see in the modules. 
-- I also can't tell if the lines are straight
+#Part 3 Alternative: With Prediction Lines and CIs
+
+```{r}
+#for model 1
+ci <- predict(model1, interval = "confidence", level = 0.90)
+pi <- predict(model1, interval = "prediction", level = 0.90)
+
+#adding predictions to datas df:
+datas <- cbind(datas, ci, pi)
+names(datas) <- c("Brain_Size_Species_Mean", "MaxLongevity_m", "CIfit", "CIlwr", "CIupr", "PIfit", "PIlwr", "PIupr")
+
+#make plot for model 1 (alpha = 1 makes my points solid - not transparent)
+a <- ggplot(datas, aes(x = Brain_Size_Species_Mean, y = MaxLongevity_m)) +
+  geom_point(alpha = 1) +
+  labs(x = "Brain Size", y = "Max Longevity", 
+       title = "Regression of Brain Size vs. Longevity") +
+  theme_minimal()
+a <- a + geom_text(x = 350, y = 250, label = mod1, color = "blue")
+
+# adding my regression line (black)
+a <- a + geom_line(aes(y = CIfit), size = 1)
+
+# then add 90% confidence intervals (dotted red lines)
+a <- a + geom_line(aes(y = CIlwr), linetype = "dotted", color = "90% CI", size = 1) + 
+  geom_line(aes(y = CIupr), linetype = "dotted", color = "90% CI", size = 1)
+
+# then add prediction intervals (blue)
+a <- a + geom_line(aes(y = PIlwr), color = "90% PI", size = 1) + 
+  geom_line(aes(y = PIupr), color = "90% PI", size = 1)
+
+# making my labels and a legend
+a <- a + labs(x = "Mean Brain Size (grams)", y = "Max Longevity (months)", title = "Regression of Brain Size vs. Longevity") 
+a
+a <- a + scale_color_manual(values = c("Data Points" = "black", 
+                                       "Regression Line" = "black", 
+                                       "90% CI" = "red", 
+                                       "90% PI" = "blue")) +
+  labs(color = "Legend")
+
+#for model2 (log)
+ci <- predict(model2, interval = "confidence", level = 0.90)
+pi <- predict(model2, interval = "prediction", level = 0.90)
+```
+
+
+
 
 ## Part 4: 
 

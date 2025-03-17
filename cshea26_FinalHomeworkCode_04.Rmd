@@ -114,7 +114,8 @@ library(gridExtra)
 
 data <- curl("https://raw.githubusercontent.com/fuzzyatelin/fuzzyatelin.github.io/master/AN588_Fall23/KamilarAndCooperData.csv") #load data
 data <- read.csv(data, header = TRUE, sep = ",", stringsAsFactors = FALSE)
-data <- na.omit(data) # clean data to get longevity and brain size (NA categories)
+data <- data[complete.cases(data$Brain_Size_Species_Mean, data$MaxLongevity_m), ]
+# clean data to get longevity and brain size (NA categories), now only doing it in these two categories instead of entire document
 Brain_Size_Species_Mean <- data$Brain_Size_Species_Mean
 
 #creating model1: longevity ~ brain size

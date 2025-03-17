@@ -105,8 +105,9 @@ Z.prop.test <- function(p1, n1, p2 = NULL, n2 = NULL, p0, alternative = "two.sid
 
 ## Part 1: 
 Fit the regression model and, using {ggplot2}, produce a scatterplot with the fitted line superimposed upon the data. Append the the fitted model equation to your plot (HINT: use the function geom_text())
-reattempt:
+
 ```{r}
+#cleaning data 
 library(curl)
 library(ggplot2)
 library(ggpubr)
@@ -117,17 +118,22 @@ data <- read.csv(data, header = TRUE, sep = ",", stringsAsFactors = FALSE)
 data <- data[complete.cases(data$Brain_Size_Species_Mean, data$MaxLongevity_m), ]
 # clean data to get longevity and brain size (NA categories), now only doing it in these two categories instead of entire document
 Brain_Size_Species_Mean <- data$Brain_Size_Species_Mean
+MaxLongevity_m <- data$MaxLongevity_m
+```
 
+```{r}
 #creating model1: longevity ~ brain size
 model1 <- lm(MaxLongevity_m ~ Brain_Size_Species_Mean, data = data) #coef returns standardized model regression coefficients
 intercept1 <- coef(model1)["(Intercept)"]
 slope1 <- coef(model1)["Brain_Size_Species_Mean"]
 
-# creating model 2: log(longevity) ~ log(brain size), doing the same as above but with the logs
+# creating model2: log(longevity) ~ log(brain size), doing the same as above but with the logs
 model2 <- lm(log(MaxLongevity_m) ~ log(Brain_Size_Species_Mean), data = data)
 intercept2 <- coef(model2)["(Intercept)"]
 slope2 <- coef(model2)["log(Brain_Size_Species_Mean)"]
+```
 
+```{r}
 #plotting model1 in ggplot as p1
 p1 <- ggplot(data, aes(x = Brain_Size_Species_Mean, y = MaxLongevity_m)) +
   geom_point(alpha = 0.5) +
@@ -153,17 +159,43 @@ grid.arrange(p1, p2, ncol = 2)
 ```
 - tried to use geom_smooth() but didn't like how the line it created wasn't making contact with the x axis. is there a way to fix this while still using geom smooth? instead here i just plotted a line equal to the intercept and slope i established above with my two models
 
-## Alternative Method (based on the model i created for Quesiton 1)
+### Alternative Method (based on the model i created for Quesiton 1 = I like this way more)
+```{r}
+model1 <- lm(MaxLongevity_m ~ Brain_Size_Species_Mean, data = data) #coef returns standardized model regression coefficients
+
+# using the function i created above
+equation1 <- function(x) {
+   label = paste("y = ", round(coef(model1)[1], 2), " + ", round(coef(model1)[2], 2), " * x")
+}
+mod1 <- equation1(model1)
+
+#plotting the function for model 1
+datas <- data.frame(cbind(data$Brain_Size_Species_Mean, data$MaxLongevity_m))
+names(datas) <- c("Brain_size", "Max_longevity")
+
+g <- ggplot(data = datas, aes(x = Brain_size, y = Max_longevity)) + # building the plot
+  xlab("Mean Brain Size (grams)") + 
+  ylab("Max Longevity (months)") + 
+  ggtitle("Regression Model for Longevity ~ Brain Size") 
+g <- g + geom_point()  # creates my scatterplot
+g <- g + geom_smooth(method = "lm", formula= y~x, color = "forestgreen") # makes the regression line
+g <- g + geom_text(x = 400, y = 300, label = mod1, color = "forestgreen") #x and y here center my equation wherever i tell it to
+g
+```
+### Alternative Method (for the log now)
 ```{r}
 
 ```
 
 
+
+Overall, after playing around with different formatting styles of the regression line/plot, I like how I can integrate my function into my plot by writing an equation directly from it. This is something I struggled with immensely initially, and with help from my peer reviewer, an element in this homework assignment that I am very proud of now. 
+
 ## Part 2: 
 
 Identify and interpret the point estimate of the slope (β1), as well as the outcome of the test associated with the hypotheses H0: β1 = 0; HA: β1 ≠ 0. Also, find a 90 percent CI for the slope (β1) parameter.
 
-An equation I used to calculate beta 1: 
+An equation I used to calculate beta 1: same formatting as module 10
 - beta1 <- cor(w, h) * (sd(h)/sd(w))
 where 
 - w <- d$weight (longevity)
@@ -180,8 +212,8 @@ h <- log(data$Brain_Size_Species_Mean)
 beta1 <- cor(w, h) * (sd(h)/sd(w))
 beta1
 ```
-- I'm not entirely sure what a nonzero value of  𝛽1 signifies? Rejecting some sort of null hypothesis? Would love some input
-- My best guess: the estimated 𝛽1 in both cases yields a non-zero value, meaning that we can reject the null hypothesis H0 which argues that 𝛽1 = 0, and therefore accept the HA (alternative hypothesis) that 𝛽1 does not equal 0.
+- Nonzero value of𝛽1 signifies:
+-  My Guess: the estimated 𝛽1 in both cases yields a non-zero value, meaning that we can reject the null hypothesis H0 which argues that 𝛽1 = 0, and therefore accept the HA (alternative hypothesis) that 𝛽1 does not equal 0.
 
 ## Part 3: 
 

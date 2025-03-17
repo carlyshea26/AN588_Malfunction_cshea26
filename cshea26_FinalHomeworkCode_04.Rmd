@@ -116,9 +116,9 @@ library(gridExtra)
 data <- curl("https://raw.githubusercontent.com/fuzzyatelin/fuzzyatelin.github.io/master/AN588_Fall23/KamilarAndCooperData.csv") #load data
 data <- read.csv(data, header = TRUE, sep = ",", stringsAsFactors = FALSE)
 data <- data[complete.cases(data$Brain_Size_Species_Mean, data$MaxLongevity_m), ]
+sum(is.na(data$Brain_Size_Species_Mean))
+sum(is.na(data$MaxLongevity_m))
 # clean data to get longevity and brain size (NA categories), now only doing it in these two categories instead of entire document
-Brain_Size_Species_Mean <- data$Brain_Size_Species_Mean
-MaxLongevity_m <- data$MaxLongevity_m
 ```
 
 ```{r}
@@ -184,10 +184,21 @@ g
 ```
 ### Alternative Method (for the log now)
 ```{r}
+#plotting the function for model2 (log)
+datalog <- data.frame(Log_brain_size = log(data$Brain_Size_Species_Mean), Log_max_longevity = log(data$MaxLongevity_m))
+
+model2 <- lm(log(MaxLongevity_m) ~ log(Brain_Size_Species_Mean), data = data)
+mod2 <- equation1(model2) #running into an error here where its giving me the equation for my model 1
+
+#making plot for model2
+b <- ggplot(data = datalog, aes(x = Log_brain_size, y = Log_max_longevity)) +
+  xlab("Log of Mean Brain Size (grams)") + 
+  ylab("Log of Max Longevity (months)") + 
+  ggtitle("Regression Model for Log of Longevity ~ Log of Brain Size") 
+b <- b + geom_point() + geom_smooth(method = "lm", color = "#7db569") + geom_text(x = 5, y = 5, label = mod2, color = "#7db569")
+b
 
 ```
-
-
 
 Overall, after playing around with different formatting styles of the regression line/plot, I like how I can integrate my function into my plot by writing an equation directly from it. This is something I struggled with immensely initially, and with help from my peer reviewer, an element in this homework assignment that I am very proud of now. 
 
